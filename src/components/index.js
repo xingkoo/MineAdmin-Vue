@@ -9,6 +9,7 @@ import {
   GraphicComponent,
 } from 'echarts/components'
 
+import MaTable from './ma-table/index.vue'
 import MaCrud from './ma-crud/index.vue'
 import MaForm from './ma-form/index.vue'
 import MaChart from './ma-charts/index.vue'
@@ -40,9 +41,10 @@ use([
 
 export default {
   install(Vue) {
-    Vue.component('MaChart', MaChart)
+    Vue.component('MaTable', MaTable)
     Vue.component('MaCrud', MaCrud)
     Vue.component('MaForm', MaForm)
+    Vue.component('MaChart', MaChart)
     Vue.component('MaUpload', MaUpload)
     Vue.component('MaTreeSlider', MaTreeSlider)
     Vue.component('MaResource', MaResource)

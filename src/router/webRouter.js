@@ -1,3 +1,5 @@
+import demoPageRoutes from './demoPageRoutes'
+  // 引入 Demo模块 的路由配置，初使化时注册到路由中，如需删除Demo模块，请移除此项
 import homePageRoutes from './homePageRoutes'
 //系统路由
 const routes = [
@@ -7,6 +9,13 @@ const routes = [
     component: () => import('@/layout/index.vue'),
     redirect: 'dashboard',
     children: homePageRoutes
+  }, {
+  // 如需删除Demo，请移除此项
+    name: 'demo',
+    path: '/demo',
+    redirect: '/demo/crud',
+    component: () => import('@/layout/index.vue'),
+    children: demoPageRoutes
   }, {
     name: 'formLayout',
     path: '/formLayout',

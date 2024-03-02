@@ -4,6 +4,7 @@ import tool from '@/utils/tool'
 import router from '@/router'
 import webRouter from '@/router/webRouter'
 import { homePage } from '@/router/homePageRoutes'
+import demoPageRoutes, { demoPage} from '@/router/demoPageRoutes'
 import { useAppStore, useTagStore } from '@/store'
 
 const useUserStore = defineStore('user', {
@@ -58,10 +59,17 @@ const useUserStore = defineStore('user', {
             reject(false)
           } else {
             this.setInfo(response.data)
-            homePage.children = webRouter[0].children
             this.setMenu(this.routers)
             this.routers = removeButtonMenu(this.routers)
+            // 设置Demo模块的菜单，如需删除Demo模块，请移除此部分，及`demoPage`的引用
+            if(import.meta.env.VITE_APP_ENV === 'development'){
+              demoPage.children = webRouter[1].children[0].children
+              this.routers.unshift(demoPage)
+            }
+            // 增加工作台相关菜单
+            homePage.children = webRouter[0].children
             this.routers.unshift(homePage)
+            console.log(this.routers);
             await this.setApp()
             resolve(response.data)
           }
