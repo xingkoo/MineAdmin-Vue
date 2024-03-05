@@ -69,7 +69,6 @@ const useUserStore = defineStore('user', {
             // 增加工作台相关菜单
             homePage.children = webRouter[0].children
             this.routers.unshift(homePage)
-            console.log(this.routers);
             await this.setApp()
             resolve(response.data)
           }

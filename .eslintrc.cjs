@@ -1,4 +1,4 @@
-export default {
+module.exports = {
   root: true,
   env: {
     node: true,
@@ -16,7 +16,9 @@ export default {
     'no-console': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
     'no-debugger': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
     'prettier/prettier': 'warn',
-    'vue/multi-word-component-names': 'off',
+    'vue/multi-word-component-names': 1,
+    'max-len': ['error', { code: 120 }],
+    semi: 0, //关闭结尾不能有分号
   },
   globals: {
     defineProps: 'readonly',

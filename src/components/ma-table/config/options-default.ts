@@ -81,7 +81,6 @@ export default {
   // // 重置搜索钩子
   // resetSearch:(searchData) => {},
 
-
   // // 请求前置处理
   // beforeRequest: (requestParams) => {},
   // // 请求后置处理
@@ -261,9 +260,9 @@ export default {
   // 行自定义 class 名称
   rowCustomClass: (record, rowIndex) => [],
   // // 是否显示索引列
-  // showIndex: false,
+  showIndex: false,
   // // 索引列名称
-  // indexLabel: '序号',
+  indexLabel: '序号',
   // // 索引列宽度
   // indexColumnWidth: 70,
   // // 索引列固定方向，false 为不固定
@@ -301,4 +300,4 @@ export default {
   //     { operation: 'delete' }
   //   ]
   // }
-}
+};

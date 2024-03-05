@@ -27,8 +27,17 @@
     "editor.formatOnSave": true
   },
   // 配置 ESLint 插件，使其能够与 Vite 正确协作
-  "eslint.validate": ["javascript", "javascriptreact", "vue"],
+  "eslint.validate": ["javascript", "javascriptreact", "vue", "typescript"],
   "eslint.options": {
-    "extensions": [".js", ".jsx", ".vue"]
-  }
+    "extensions": [".js", ".jsx", ".vue", ".ts", ".t.ts"]
+  },
+  //配置@的路径提示
+  "path-autocomplete.pathMappings": {
+    "@": "${workspace/src/*",
+    "@cps": "${workspace/src/components/*"
+  },
+  "autoimport.filesToScan": "**/*.{ts,tsx,js,vue,scss,css}",
+  "autoimport.showNotifications": true,
+  "breadcrumbs.enabled": true,
+  "breadcrumbs.showArrays": true
 }

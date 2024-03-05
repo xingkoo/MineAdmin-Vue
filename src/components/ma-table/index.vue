@@ -8,262 +8,213 @@
  - @Link   https://gitee.com/xmo/mineadmin-vue
 -->
 <template>
-  <a-layout-content class="flex flex-col lg:h-full relative w-full">
-    <div class="_crud-header flex flex-col mb-2" ref="crudHeaderRef">
-      此处加载搜索组件
-    </div>
-    <div class="mb-2"><slot name="middleContent"></slot></div>
-    <div class="_crud-content">
-      <div
-        class="operation-tools lg:flex justify-between mb-3"
-        ref="crudOperationRef"
-      >
-        <a-space class="lg:flex block lg:inline-block">
-          <slot name="tableBeforeButtons"></slot>
-          <slot name="tableButtons">
+  <div class="_crud-content">
+    <div class="operation-tools lg:flex justify-between mb-3" ref="crudOperationRef">
+      <a-space class="lg:flex block lg:inline-block">
+        <slot name="tableBeforeButtons"></slot>
+        <slot name="tableButtons">
+          <a-button
+            v-if="options.add.show"
+            v-auth="options.add.auth || []"
+            v-role="options.add.role || []"
+            @click="addAction"
+            type="primary"
+            class="w-full lg:w-auto mt-2 lg:mt-0"
+          >
+            <template #icon><icon-plus /></template>{{ options.add.text || '新增' }}
+          </a-button>
+
+          <a-popconfirm
+            content="确定要删除数据吗?"
+            position="bottom"
+            @ok="deletesMultipleAction"
+            v-if="options.delete.show && isBatch(options.delete) && options.rowSelection"
+          >
             <a-button
-              v-if="options.add.show"
-              v-auth="options.add.auth || []"
-              v-role="options.add.role || []"
-              @click="addAction"
+              v-auth="options.delete.auth || []"
+              v-role="options.delete.role || []"
               type="primary"
+              status="danger"
               class="w-full lg:w-auto mt-2 lg:mt-0"
             >
-              <template #icon><icon-plus /></template
-              >{{ options.add.text || '新增' }}
+              <template #icon><icon-delete /></template>
+              {{ isRecovery ? options.delete.realText || '删除' : options.delete.text || '删除' }}
             </a-button>
+          </a-popconfirm>
 
-            <a-popconfirm
-              content="确定要删除数据吗?"
-              position="bottom"
-              @ok="deletesMultipleAction"
-              v-if="
-                options.delete.show &&
-                isBatch(options.delete) &&
-                options.rowSelection
-              "
-            >
-              <a-button
-                v-auth="options.delete.auth || []"
-                v-role="options.delete.role || []"
-                type="primary"
-                status="danger"
-                class="w-full lg:w-auto mt-2 lg:mt-0"
-              >
-                <template #icon><icon-delete /></template>
-                {{
-                  isRecovery
-                    ? options.delete.realText || '删除'
-                    : options.delete.text || '删除'
-                }}
-              </a-button>
-            </a-popconfirm>
-
-            <a-popconfirm
-              content="确定要恢复数据吗?"
-              position="bottom"
-              @ok="recoverysMultipleAction"
-              v-if="
-                options.recovery.show && isRecovery && isBatch(options.delete)
-              "
-            >
-              <a-button
-                v-auth="options.recovery.auth || []"
-                v-role="options.recovery.role || []"
-                type="primary"
-                status="success"
-                class="w-full lg:w-auto mt-2 lg:mt-0"
-              >
-                <template #icon><icon-undo /></template
-                >{{ options.recovery.text || '恢复' }}</a-button
-              >
-            </a-popconfirm>
-
-            <a-button
-              v-if="options.import.show"
-              v-auth="options.import.auth || []"
-              v-role="options.import.role || []"
-              @click="importAction"
-              class="w-full lg:w-auto mt-2 lg:mt-0"
-              ><template #icon><icon-upload /></template
-              >{{ options.import.text || '导入' }}</a-button
-            >
-
-            <a-button
-              v-if="options.export.show"
-              v-auth="options.export.auth || []"
-              v-role="options.export.role || []"
-              @click="exportAction"
-              class="w-full lg:w-auto mt-2 lg:mt-0"
-              ><template #icon><icon-download /></template
-              >{{ options.export.text || '导出' }}</a-button
-            >
-
-            <a-button
-              type="secondary"
-              @click="handlerExpand"
-              v-if="options.isExpand"
-              class="w-full lg:w-auto mt-2 lg:mt-0"
-            >
-              <template #icon>
-                <icon-expand v-if="!expandState" />
-                <icon-shrink v-else />
-              </template>
-              {{ expandState ? ' 折叠' : ' 展开' }}
-            </a-button>
-          </slot>
-          <slot name="tableAfterButtons"></slot>
-        </a-space>
-        <a-space class="lg:mt-0 mt-2" v-if="options.showTools">
-          <slot name="tools"></slot>
-          <a-tooltip
-            :content="isRecovery ? '显示正常数据' : '显示回收站数据'"
-            v-if="options.recycleApi && isFunction(options.recycleApi)"
+          <a-popconfirm
+            content="确定要恢复数据吗?"
+            position="bottom"
+            @ok="recoverysMultipleAction"
+            v-if="options.recovery.show && isRecovery && isBatch(options.delete)"
           >
-            <a-button shape="circle" @click="switchDataType"
-              ><icon-swap
-            /></a-button>
-          </a-tooltip>
-          <a-tooltip content="刷新表格"
-            ><a-button shape="circle" @click="refresh"
-              ><icon-refresh /></a-button
-          ></a-tooltip>
-          <a-tooltip content="显隐搜索"
-            ><a-button shape="circle" @click="toggleSearch"
-              ><icon-search /></a-button
-          ></a-tooltip>
-          <a-tooltip content="打印表格"
-            ><a-button shape="circle" @click="printTable"
-              ><icon-printer /></a-button
-          ></a-tooltip>
-          <a-tooltip content="设置"
-            ><a-button shape="circle" @click="tableSetting"
-              ><icon-settings /></a-button
-          ></a-tooltip>
-        </a-space>
-      </div>
-      <div ref="crudContentRef">
-        <slot name="content" v-bind="tableData">
-          <a-table
-            v-if="!options.expandAllRows || tableData.length > 0"
-            v-bind="$attrs"
-            ref="tableRef"
-            :key="options.pk"
-            :data="tableData"
-            :loading="loading"
-            :sticky-header="options.stickyHeader"
-            :pagination="options.tablePagination"
-            :stripe="options.stripe"
-            :bordered="options.bordered"
-            :rowSelection="options.rowSelection ?? undefined"
-            :row-key="options?.rowSelection?.key ?? options.pk"
-            :scroll="options.scroll"
-            :column-resizable="options.resizable"
-            :size="options.size"
-            :row-class="options.rowClass"
-            :hide-expand-button-on-empty="options.hideExpandButtonOnEmpty"
-            :default-expand-all-rows="options.expandAllRows"
-            :summary="
-              (options.customerSummary || options.showSummary) && __summary
-            "
-            @selection-change="setSelecteds"
-            @sorter-change="handlerSort"
-          >
-            <template #tr="{ record, rowIndex }">
-              <tr
-                class="ma-crud-table-tr"
-                :class="
-                  isFunction(options.rowCustomClass)
-                    ? options.rowCustomClass(record, rowIndex) ?? []
-                    : options.rowCustomClass
-                "
-                @contextmenu.prevent="openContextMenu($event, record)"
-                @dblclick="dbClickOpenEdit(record)"
-              />
-            </template>
-
-            <template #expand-row="record" v-if="options.showExpandRow">
-              <slot name="expand-row" v-bind="record"></slot>
-            </template>
-            <template #columns>
-              <ma-column
-                ref="crudColumnRef"
-                v-if="reloadColumn"
-                :columns="columns"
-                :isRecovery="isRecovery"
-                :crudFormRef="crudFormRef"
-                @refresh="() => refresh()"
-                @showImage="showImage"
-              >
-                <template #operationBeforeExtend="{ record, column, rowIndex }">
-                  <slot
-                    name="operationBeforeExtend"
-                    v-bind="{ record, column, rowIndex }"
-                  ></slot>
-                </template>
-
-                <template #operationCell="{ record, column, rowIndex }">
-                  <slot
-                    name="operationCell"
-                    v-bind="{ record, column, rowIndex }"
-                  ></slot>
-                </template>
-
-                <template #operationAfterExtend="{ record, column, rowIndex }">
-                  <slot
-                    name="operationAfterExtend"
-                    v-bind="{ record, column, rowIndex }"
-                  ></slot>
-                </template>
-
-                <template
-                  v-for="(slot, slotIndex) in getSlot(columns)"
-                  :key="slotIndex"
-                  #[slot]="{ record, column, rowIndex }"
-                >
-                  <slot
-                    :name="`${slot}`"
-                    v-bind="{ record, column, rowIndex }"
-                  />
-                </template>
-              </ma-column>
-            </template>
-            <template
-              #summary-cell="{ column, record, rowIndex }"
-              v-if="options.customerSummary || options.showSummary"
+            <a-button
+              v-auth="options.recovery.auth || []"
+              v-role="options.recovery.role || []"
+              type="primary"
+              status="success"
+              class="w-full lg:w-auto mt-2 lg:mt-0"
             >
-              <slot name="summaryCell" v-bind="{ record, column, rowIndex }">{{
-                record[column.dataIndex]
-              }}</slot>
+              <template #icon><icon-undo /></template>{{ options.recovery.text || '恢复' }}</a-button
+            >
+          </a-popconfirm>
+
+          <a-button
+            v-if="options.import.show"
+            v-auth="options.import.auth || []"
+            v-role="options.import.role || []"
+            @click="importAction"
+            class="w-full lg:w-auto mt-2 lg:mt-0"
+            ><template #icon><icon-upload /></template>{{ options.import.text || '导入' }}</a-button
+          >
+
+          <a-button
+            v-if="options.export.show"
+            v-auth="options.export.auth || []"
+            v-role="options.export.role || []"
+            @click="exportAction"
+            class="w-full lg:w-auto mt-2 lg:mt-0"
+            ><template #icon><icon-download /></template>{{ options.export.text || '导出' }}</a-button
+          >
+
+          <a-button
+            type="secondary"
+            @click="handlerExpand"
+            v-if="options.isExpand"
+            class="w-full lg:w-auto mt-2 lg:mt-0"
+          >
+            <template #icon>
+              <icon-expand v-if="!expandState" />
+              <icon-shrink v-else />
             </template>
-          </a-table>
+            {{ expandState ? ' 折叠' : ' 展开' }}
+          </a-button>
         </slot>
-      </div>
+        <slot name="tableAfterButtons"></slot>
+      </a-space>
+      <a-space class="lg:mt-0 mt-2" v-if="options.showTools">
+        <slot name="tools"></slot>
+        <a-tooltip
+          :content="isRecovery ? '显示正常数据' : '显示回收站数据'"
+          v-if="options.recycleApi && isFunction(options.recycleApi)"
+        >
+          <a-button shape="circle" @click="switchDataType"><icon-swap /></a-button>
+        </a-tooltip>
+        <a-tooltip content="刷新表格"
+          ><a-button shape="circle" @click="refresh"><icon-refresh /></a-button
+        ></a-tooltip>
+        <a-tooltip content="显隐搜索"
+          ><a-button shape="circle" @click="toggleSearch"><icon-search /></a-button
+        ></a-tooltip>
+        <a-tooltip content="打印表格"
+          ><a-button shape="circle" @click="printTable"><icon-printer /></a-button
+        ></a-tooltip>
+        <a-tooltip content="设置"
+          ><a-button shape="circle" @click="tableSetting"><icon-settings /></a-button
+        ></a-tooltip>
+      </a-space>
     </div>
-    <!-- 导出组件 -->
-    <ma-import ref="crudImportRef" />
+    <div ref="crudContentRef">
+      <slot name="content" v-bind="tableData">
+        <a-table
+          v-if="!options.expandAllRows || tableData.length > 0"
+          v-bind="$attrs"
+          ref="tableRef"
+          :key="options.pk"
+          :data="tableData"
+          :loading="loading"
+          :sticky-header="options.stickyHeader"
+          :pagination="options.tablePagination"
+          :stripe="options.stripe"
+          :bordered="options.bordered"
+          :rowSelection="options.rowSelection ?? undefined"
+          :row-key="options?.rowSelection?.key ?? options.pk"
+          :scroll="options.scroll"
+          :column-resizable="options.resizable"
+          :size="options.size"
+          :row-class="options.rowClass"
+          :hide-expand-button-on-empty="options.hideExpandButtonOnEmpty"
+          :default-expand-all-rows="options.expandAllRows"
+          :summary="(options.customerSummary || options.showSummary) && __summary"
+          @selection-change="setSelecteds"
+          @sorter-change="handlerSort"
+        >
+          <template #tr="{ record, rowIndex }">
+            <tr
+              class="ma-crud-table-tr"
+              :class="
+                isFunction(options.rowCustomClass)
+                  ? options.rowCustomClass(record, rowIndex) ?? []
+                  : options.rowCustomClass
+              "
+              @contextmenu.prevent="openContextMenu($event, record)"
+              @dblclick="dbClickOpenEdit(record)"
+            />
+          </template>
 
-    <!-- 表格列管理工具 -->
-    <ma-setting ref="crudSettingRef" />
+          <template #expand-row="record" v-if="options.showExpandRow">
+            <slot name="expand-row" v-bind="record"></slot>
+          </template>
+          <template #columns>
+            <ma-column
+              ref="crudColumnRef"
+              v-if="reloadColumn"
+              :pk="options.pk"
+              :page="page"
+              :columns="columns"
+              :isRecovery="isRecovery"
+              :crudFormRef="crudFormRef"
+              @operation="operation"
+              @refresh="() => refresh()"
+              @showImage="showImage"
+            >
+              <template #operationBeforeExtend="{ record, column, rowIndex }">
+                <slot name="operationBeforeExtend" v-bind="{ record, column, rowIndex }"></slot>
+              </template>
 
-    <!-- 右键菜单 -->
-    <ma-context-menu
-      ref="crudContextMenuRef"
-      @execCommand="execContextMenuCommand"
-    />
-  </a-layout-content>
+              <template #operationCell="{ record, column, rowIndex }">
+                <slot name="operationCell" v-bind="{ record, column, rowIndex }"></slot>
+              </template>
+
+              <template #operationAfterExtend="{ record, column, rowIndex }">
+                <slot name="operationAfterExtend" v-bind="{ record, column, rowIndex }"></slot>
+              </template>
+
+              <template
+                v-for="(slot, slotIndex) in getSlot(columns)"
+                :key="slotIndex"
+                #[slot]="{ record, column, rowIndex }"
+              >
+                <slot :name="`${slot}`" v-bind="{ record, column, rowIndex }" />
+              </template>
+            </ma-column>
+          </template>
+          <template #summary-cell="{ column, record, rowIndex }" v-if="options.customerSummary || options.showSummary">
+            <slot name="summaryCell" v-bind="{ record, column, rowIndex }">{{ record[column.dataIndex] }}</slot>
+          </template>
+        </a-table>
+      </slot>
+    </div>
+  </div>
+  <!-- 导出组件 -->
+  <ma-import ref="crudImportRef" />
+
+  <!-- 表格列管理工具 -->
+  <ma-setting ref="crudSettingRef" />
+
+  <!-- 右键菜单 -->
+  <ma-context-menu ref="crudContextMenuRef" @execCommand="execContextMenuCommand" />
 </template>
 <script setup lang="ts">
 // 响应返回数据解析
 import config from '@/config/crud';
-import { ref, watch, provide, nextTick, onMounted, onUnmounted } from 'vue';
+import { ref, watch, provide, nextTick, inject, onMounted, onUnmounted } from 'vue';
 import isArray from 'lodash/isArray';
 import isFunction from 'lodash/isFunction';
 import isUndefined from 'lodash/isUndefined';
 import { request } from '@/utils/request';
 import isObject from 'lodash/isObject';
 import defaultOptions from './config/options-default';
-import { TableOptions } from './types';
 import tool from '@/utils/tool';
 import { Message } from '@arco-design/web-vue';
 import checkAuth from '@/directives/auth/auth';
@@ -278,13 +229,18 @@ import MaImport from './components/import.vue';
 import MaSetting from './components/setting.vue';
 import MaContextMenu from './components/contextMenu.vue';
 
-const props = defineProps({
-  // 表格数据
-  data: { type: [Function, Array], default: () => null },
-  // 增删改查设置
-  options: { type: Object as () => TableOptions, default: {} },
-  // 字段列设置
-  columns: { type: Array, default: [] },
+import { MaTOptions, MaTSearch, MaTProps } from './types';
+import { getCurrentInstance } from 'vue';
+
+const props = withDefaults(defineProps<MaTProps>(), {
+  // search: (): MaTSearch => ({
+  //   id: 'abc',
+  // }),
+  // options: (): MaTOptions => ({
+  //   pk: '123',
+  // }),
+  // columns: () => [{ title: 'name' }],
+  // tableData: undefined,
 });
 
 // 数据加载状态
@@ -298,6 +254,7 @@ const selecteds = ref([]);
 const columns: any = ref(props.columns);
 // @todo 请求参数，此处应该是传入进来的, 注意定义接口
 const requestParams: any = ref({});
+const page: any = ref(requestParams[config.request.page]); // 第几页
 const reloadColumn = ref(true);
 const isRecovery = ref(false);
 const openPagination = ref(false);
@@ -324,9 +281,10 @@ const crudSettingRef = ref();
 // @todo 改名
 const crudImportRef = ref();
 
-const options = ref(
-  Object.assign(JSON.parse(JSON.stringify(defaultOptions)), props.options),
-);
+const options = ref(Object.assign(JSON.parse(JSON.stringify(defaultOptions)), props.options));
+
+// 把options设置为子组件可用
+provide('options', options);
 
 // 各种数据监听
 watch(
@@ -338,14 +296,10 @@ watch(
 const init = async () => {
   // 设置 组件id
   if (isUndefined(options.value.id)) {
-    options.value.id =
-      'MaCrud_' +
-      Math.floor(
-        Math.random() * 100000 + Math.random() * 20000 + Math.random() * 5000,
-      );
+    options.value.id = 'MaCrud_' + Math.floor(Math.random() * 100000 + Math.random() * 20000 + Math.random() * 5000);
   }
 
-  // 收集数据
+  // 收集数据（统计联运表单）
   // @todo any
   columns.value.map((item: any) => {
     if (item.cascaderItem && item.cascaderItem.length > 0) {
@@ -381,29 +335,12 @@ const tabsHandler = async () => {
 const isBatch = (obj) => (isUndefined(obj) ? true : obj?.batch ?? true);
 
 onMounted(async () => {
-  if (
-    typeof options.value.autoRequest == 'undefined' ||
-    options.value.autoRequest
-  ) {
+  if (typeof options.value.autoRequest == 'undefined' || options.value.autoRequest) {
     await requestData();
   }
-
-  // if (! options.value.expandSearch && crudSearchRef.value) {
-  //   crudSearchRef.value.setSearchHidden()
-  // }
-
-  // if (options.value.pageLayout === 'fixed') {
-  //   window.addEventListener('resize', resizeHandler, false);
-  //   headerHeight.value = crudHeaderRef.value.offsetHeight
-  //   settingFixedPage()
-  // }
 });
 
-onUnmounted(() => {
-  // if (options.value.pageLayout === 'fixed') {
-  //   window.removeEventListener('resize', resizeHandler, false);
-  // }
-});
+onUnmounted(() => {});
 
 const toggleSearch = async () => {
   // const dom = crudHeaderRef.value?.style
@@ -447,8 +384,7 @@ const __summary = ({ data }) => {
               summaryData[item.dataIndex] += parseFloat(record[item.dataIndex]);
             }
             if (item.action && item.action === 'avg') {
-              summaryData[item.dataIndex] +=
-                parseFloat(record[item.dataIndex]) / length;
+              summaryData[item.dataIndex] += parseFloat(record[item.dataIndex]) / length;
             }
           }
         });
@@ -457,10 +393,7 @@ const __summary = ({ data }) => {
 
     for (let i in summaryData) {
       if (/^\d+(\.\d+)?$/.test(summaryData[i])) {
-        summaryData[i] =
-          summaryPrefixText[i] +
-          tool.groupSeparator(summaryData[i].toFixed(2)) +
-          summarySuffixText[i];
+        summaryData[i] = summaryPrefixText[i] + tool.groupSeparator(summaryData[i].toFixed(2)) + summarySuffixText[i];
       }
     }
 
@@ -488,15 +421,11 @@ const handlerSort = async (name, type) => {
   }
 };
 const openContextMenu = (ev, record) => {
-  options.value?.contextMenu?.enabled === true &&
-    crudContextMenuRef.value.openContextMenu(ev, record);
+  options.value?.contextMenu?.enabled === true && crudContextMenuRef.value.openContextMenu(ev, record);
 };
 
 const addAction = () => {
-  if (
-    isFunction(options.value.beforeOpenAdd) &&
-    !options.value.beforeOpenAdd()
-  ) {
+  if (isFunction(options.value.beforeOpenAdd) && !options.value.beforeOpenAdd()) {
     return false;
   }
   if (options.value.add.action && isFunction(options.value.add.action)) {
@@ -507,10 +436,7 @@ const addAction = () => {
 };
 
 const editAction = (record) => {
-  if (
-    isFunction(options.value.beforeOpenEdit) &&
-    !options.value.beforeOpenEdit(record)
-  ) {
+  if (isFunction(options.value.beforeOpenEdit) && !options.value.beforeOpenEdit(record)) {
     return false;
   }
   if (options.value.edit.action && isFunction(options.value.edit.action)) {
@@ -534,11 +460,7 @@ const dbClickOpenEdit = (record) => {
         }
       }
 
-      if (
-        options.value.edit.api &&
-        options.value.edit.show &&
-        isFunction(options.value.edit.api)
-      ) {
+      if (options.value.edit.api && options.value.edit.show && isFunction(options.value.edit.api)) {
         editAction(record);
       }
     }
@@ -572,14 +494,9 @@ const exportAction = () => {
 
 const deletesMultipleAction = async () => {
   if (selecteds.value && selecteds.value.length > 0) {
-    const api = isRecovery.value
-      ? options.value.delete.realApi
-      : options.value.delete.api;
+    const api = isRecovery.value ? options.value.delete.realApi : options.value.delete.api;
     let data = {};
-    if (
-      isFunction(options.value.beforeDelete) &&
-      !(data = options.value.beforeDelete(selecteds.value))
-    ) {
+    if (isFunction(options.value.beforeDelete) && !(data = options.value.beforeDelete(selecteds.value))) {
       return false;
     }
     const response = await api(Object.assign({ ids: selecteds.value }, data));
@@ -608,9 +525,7 @@ const recoverysMultipleAction = async () => {
 const switchDataType = async () => {
   isRecovery.value = !isRecovery.value;
   currentApi.value =
-    isRecovery.value &&
-    options.value.recycleApi &&
-    isFunction(options.value.recycleApi)
+    isRecovery.value && options.value.recycleApi && isFunction(options.value.recycleApi)
       ? options.value.recycleApi
       : options.value.api;
   await requestData();
@@ -618,9 +533,7 @@ const switchDataType = async () => {
 
 const handlerExpand = () => {
   expandState.value = !expandState.value;
-  expandState.value
-    ? tableRef.value.expandAll(true)
-    : tableRef.value.expandAll(false);
+  expandState.value ? tableRef.value.expandAll(true) : tableRef.value.expandAll(false);
 };
 
 const settingFixedPage = () => {
@@ -632,12 +545,9 @@ const settingFixedPage = () => {
 
 const requestHandle = async () => {
   loading.value = true;
-  isFunction(options.value.beforeRequest) &&
-    options.value.beforeRequest(requestParams.value);
+  isFunction(options.value.beforeRequest) && options.value.beforeRequest(requestParams.value);
   if (isFunction(currentApi.value)) {
-    const response = config.parseResponseData(
-      await currentApi.value(requestParams.value),
-    );
+    const response = config.parseResponseData(await currentApi.value(requestParams.value));
     if (response.rows) {
       tableData.value = response.rows;
       if (response.pageInfo) {
@@ -652,8 +562,7 @@ const requestHandle = async () => {
   } else {
     console.error(`ma-crud error：crud.api not is Function.`);
   }
-  isFunction(options.value.afterRequest) &&
-    (tableData.value = options.value.afterRequest(tableData.value));
+  isFunction(options.value.afterRequest) && (tableData.value = options.value.afterRequest(tableData.value));
   loading.value = false;
 };
 
@@ -675,9 +584,7 @@ const refresh = async () => {
     loading.value = false;
   } else {
     currentApi.value =
-      isRecovery.value &&
-      options.value.recycleApi &&
-      isFunction(options.value.recycleApi)
+      isRecovery.value && options.value.recycleApi && isFunction(options.value.recycleApi)
         ? options.value.recycleApi
         : options.value.api;
     await requestHandle();
@@ -687,21 +594,20 @@ const showImage = (url) => {
   imgUrl.value = url;
   imgVisible.value = true;
 };
-const getSlot = (cls = []) => {
-  let sls = [];
+const getSlot = (cls = []): string[] => {
+  let sls: string[] = [];
   cls.map((item: any) => {
     // @todo any
     if (item.children && item.children.length > 0) {
       let tmp = getSlot(item.children);
       sls.push(...tmp);
     } else if (item.dataIndex) {
-      // sls.push(item.dataIndex);
-      // @todo 不确认，必须确认
-      // @important 此处不能使用item.dataIndex，因为item.dataIndex是字符串，而slot的name必须是变量
+      sls.push(item.dataIndex as string);
     }
   });
   return sls;
 };
+provide('getSlot', getSlot);
 
 // 运行右键菜单
 
@@ -728,11 +634,7 @@ const execContextMenuCommand = async (args) => {
 // 请求数据
 const requestData = async () => {
   await init();
-  if (
-    options.value.showIndex &&
-    columns.value.length > 0 &&
-    columns.value[0].dataIndex !== '__index'
-  ) {
+  if (options.value.showIndex && columns.value.length > 0 && columns.value[0].dataIndex !== '__index') {
     columns.value.unshift({
       title: options.value.indexLabel,
       dataIndex: '__index',
@@ -753,13 +655,12 @@ const requestData = async () => {
       fixed: options.value.operationColumnFixed,
     });
   }
-
+  // 初始化请求参数
   initRequestParams();
   if (!options.value.tabs?.dataIndex && !options.value.tabs.data) {
     await refresh();
   } else {
-    options.value.tabs.defaultKey =
-      options.value.tabs?.defaultKey ?? options.value.tabs.data[0].value;
+    options.value.tabs.defaultKey = options.value.tabs?.defaultKey ?? options.value.tabs.data[0].value;
     await tabChange(options.value.tabs?.defaultKey);
   }
 };
@@ -768,13 +669,9 @@ const initRequestParams = () => {
   requestParams.value[config.request.page] = 1;
   requestParams.value[config.request.pageSize] = options.value.pageSize ?? 10;
   if (options.value.requestParamsLabel) {
-    requestParams.value[options.value.requestParamsLabel] =
-      options.value.requestParams;
+    requestParams.value[options.value.requestParamsLabel] = options.value.requestParams;
   } else {
-    requestParams.value = Object.assign(
-      requestParams.value,
-      options.value.requestParams,
-    );
+    requestParams.value = Object.assign(requestParams.value, options.value.requestParams);
   }
 };
 
@@ -794,10 +691,7 @@ const getColumnService = (strictMode = true) => {
 };
 
 const tabChange = async (value) => {
-  const searchKey =
-    options.value.tabs?.searchKey ??
-    options.value.tabs?.dataIndex ??
-    'tabValue';
+  const searchKey = options.value.tabs?.searchKey ?? options.value.tabs?.dataIndex ?? 'tabValue';
   const params = {};
   params[searchKey] = value;
   requestParams.value = Object.assign(requestParams.value, params);
@@ -815,6 +709,56 @@ const getPageSize = () => requestParams.value[config.request.pageSize];
 // 获取总数量
 const getTotal = () => total.value;
 
+// 一些事件
+
+const seeAction = (record) => {
+  if (isFunction(options.beforeOpenSee) && !options.beforeOpenSee(record)) {
+    return false;
+  }
+  if (options.see.action && isFunction(options.see.action)) {
+    options.see.action(record);
+  } else {
+    props.crudFormRef.see(record);
+  }
+};
+const recoveryAction = async (record) => {
+  const response = await options.recovery.api({ ids: [record[props.pk]] });
+  response.success && Message.success(response.message || `恢复成功！`);
+  emit('refresh');
+};
+
+const deleteAction = async (record) => {
+  let data = {};
+  if (isFunction(options.beforeDelete) && !(data = options.beforeDelete([record[props.pk]]))) {
+    return false;
+  }
+  const api = props.isRecovery ? options.delete.realApi : options.delete.api;
+  const response = await api(Object.assign({ ids: [record[props.pk]] }, data));
+  if (options.afterDelete && isFunction(options.afterDelete)) {
+    options.afterDelete(response, record);
+  }
+  response.success && Message.success(response.message || `删除成功！`);
+  emit('refresh');
+};
+
+// 操作市场
+const operation = (action, record) => {
+  if (typeof action === 'string') {
+    switch (action) {
+      case 'seeAction':
+        seeAction(record);
+        break;
+      case 'deleteAction':
+        deleteAction(record);
+        break;
+      case 'recoveryAction':
+        recoveryAction(record);
+        break;
+      default:
+        console.error(`Method ${action} not found!`);
+    }
+  }
+};
 defineExpose({
   refresh,
   requestData,
@@ -834,3 +778,4 @@ defineExpose({
 });
 // addAction, getCurrentAction, getFormData, crudSearchRef, getFormColumns
 </script>
+./components/column/column.vue

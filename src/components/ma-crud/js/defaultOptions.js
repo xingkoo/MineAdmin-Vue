@@ -74,8 +74,7 @@ export default {
   afterSearch: (requestParams) => {},
 
   // 重置搜索钩子
-  resetSearch:(searchData) => {},
-
+  resetSearch: (searchData) => {},
 
   // 请求前置处理
   beforeRequest: (requestParams) => {},
@@ -120,7 +119,7 @@ export default {
     // 选项卡单击事件
     onClick: (value) => {},
   },
-  
+
   // 表单配置项
   formOption: {
     // 显示方式支持模态框和抽屉: modal drawer tag
@@ -136,7 +135,7 @@ export default {
     // 是否全屏，只有modal有效
     isFull: false,
     // 表单布局
-    layout: []
+    layout: [],
   },
   add: {
     // 新增api
@@ -163,13 +162,12 @@ export default {
     show: false,
     // 数据来源：table(表格行数据) | api(通过接口获取数据)
     dataSource: 'table',
-    // 数据源API接口 
+    // 数据源API接口
     dataSourceApi: undefined,
     // 是否禁用，仅表格行内按钮有效
     disabled: false,
   },
   delete: {
-
     // 删除api
     api: undefined,
     // 显示删除按钮的权限
@@ -222,7 +220,7 @@ export default {
     show: false,
     // 数据来源：table(表格行数据) | api(通过接口获取数据)
     dataSource: 'table',
-    // 数据源API接口 
+    // 数据源API接口
     dataSourceApi: undefined,
     // 是否禁用，仅表格行内按钮有效
     disabled: false,
@@ -293,7 +291,7 @@ export default {
       { operation: 'divider' },
       { operation: 'add' },
       { operation: 'edit' },
-      { operation: 'delete' }
-    ]
-  }
-}
+      { operation: 'delete' },
+    ],
+  },
+};
