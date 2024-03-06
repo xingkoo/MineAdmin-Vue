@@ -29,7 +29,7 @@
   // 配置 ESLint 插件，使其能够与 Vite 正确协作
   "eslint.validate": ["javascript", "javascriptreact", "vue", "typescript"],
   "eslint.options": {
-    "extensions": [".js", ".jsx", ".vue", ".ts", ".t.ts"]
+    "extensions": [".js", ".jsx", ".vue", ".ts", ".d.ts"]
   },
   //配置@的路径提示
   "path-autocomplete.pathMappings": {

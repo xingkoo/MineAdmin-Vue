@@ -38,9 +38,9 @@
     "src",
     "mock",
     "vite.config.ts",
-    "src/**/*",
-    "src/**/*.vue",
+    "src/**/*.ts",
     "src/**/*.d.ts",
-    "src/**/*.ts"
+    "src/**/*.tsx",
+    "src/**/*.vue"
   ]
 }

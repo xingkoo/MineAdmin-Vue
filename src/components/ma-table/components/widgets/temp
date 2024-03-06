@@ -1,0 +1,57 @@
+
+          <template v-if="row.dataIndex === '__operation'">
+            <cell-operation :column="column" :record="record" :render="row.customRender" :rowIndex="rowIndex">
+              <!-- 将插槽内容传递给子组件 -->
+              <template v-slot:operationBeforeExtend="{ record, column, rowIndex }">
+                <slot name="operationBeforeExtend" v-bind="{ record, column, rowIndex }"></slot>
+              </template>
+              <!-- 将插槽内容传递给子组件 -->
+              <template v-slot:operationCell="{ record, column, rowIndex }">
+                <slot name="operationCell" v-bind="{ record, column, rowIndex }"></slot>
+              </template>
+              <!-- 将插槽内容传递给子组件 -->
+              <template v-slot:operationAfterExtend="{ record, column, rowIndex }">
+                <slot name="operationAfterExtend" v-bind="{ record, column, rowIndex }"></slot>
+              </template>
+            </cell-operation>
+          </template><template v-else-if="row.customRender">
+            <custom-render
+              :column="column"
+              :record="record"
+              :render="row.customRender"
+              :rowIndex="rowIndex"
+            ></custom-render>
+          </template>
+          <!-- 以列为名的插槽 -->
+          <slot :name="row.dataIndex" v-bind="{ record, column, rowIndex }" v-else>
+            <template v-if="row.dataIndex === '__index'">
+              <cell-index :column="column" :record="record" :rowIndex="rowIndex" :page="'1'" :pageSize="10">
+                <template
+                  v-for="(slot, slotIndex) in getSlot(columns)"
+                  :key="slotIndex"
+                  #index="{ record, column, rowIndex }"
+                  >{{ page }}
+                  <slot :name="`${slot}`" v-bind="{ record, column, rowIndex }" />
+                </template>
+              </cell-index>
+            </template>
+            <template v-if="row.dict && row.dict.translation">
+              <template v-if="isArray(get(record, row.dataIndex))">
+                <a-tag v-for="(item, index) in get(record, row.dataIndex)" :key="index" class="ml-1">{{
+                  getDataIndex(row, item)
+                }}</a-tag>
+              </template>
+              <a-tag v-else-if="row.dict.tagColors" :color="getTagColor(row, record)">
+                {{ getDataIndex(row, record) }}
+              </a-tag>
+              <a-tag v-else-if="row.dict.tagColor" :color="row.dict.tagColor">{{ getDataIndex(row, record) }}</a-tag>
+              <span v-else>{{ getDataIndex(row, record) }}</span>
+            </template>
+            <template v-else-if="row.dataIndex && row.dataIndex.indexOf('.') !== -1">
+              {{ get(record, row.dataIndex) }}
+            </template>
+            <template v-else-if="row.formType === 'upload'">
+              <a-link @click="imageSee(row, record, row.dataIndex)"><icon-image /> 查看图片</a-link>
+            </template>
+            <template v-else>{{ record[row.dataIndex] }}</template>
+          </slot>

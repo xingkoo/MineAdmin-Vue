@@ -2,20 +2,25 @@ import { AxiosInstance } from 'axios';
 
 // 表格组件需要传入的属性
 export interface MaTProps {
-  options: MaTOptions;
-  columns: MaTColumn[];
+  options: MaTOptions; // 选项
+  columns: MaTColumn[]; // 列配置
   tableData?: MaTData;
 }
 
 // 表格组件的配置选项
 export interface MaTOptions {
-  pk: string;
+  pk: string; // 记录主键
+  ps?: number; // Page Size 每页显示数量
+  pi?: number; // Page Index 当前第几页
+  [key: string]: any; // 更多未确认配置
 }
+
+export type ColumnType = 'index' | 'operation' | 'solt';
 
 // 表格组件的列配置
 export interface MaTColumn {
-  // 表单挂件 **（以后变更为 widget）**
-  formType: string;
+  // 表单类型
+  type: ColumnType;
   // 列数据在数据项中对应的 key，支持 a.b.c 的嵌套写法 **（以后变更为 index）**
   dataIndex: string;
   // 字段业务标识名称,不填写则使用`index`的值

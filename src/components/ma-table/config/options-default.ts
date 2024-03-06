@@ -8,6 +8,8 @@ export default {
   id: undefined,
   // 主键名称
   pk: 'id',
+  ps: 10,
+  pi: 1,
   // // 表单是否排除PK
   // formExcludePk: true,
   // // 请求api方法

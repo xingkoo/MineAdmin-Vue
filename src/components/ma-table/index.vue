@@ -12,84 +12,7 @@
     <div class="operation-tools lg:flex justify-between mb-3" ref="crudOperationRef">
       <a-space class="lg:flex block lg:inline-block">
         <slot name="tableBeforeButtons"></slot>
-        <slot name="tableButtons">
-          <a-button
-            v-if="options.add.show"
-            v-auth="options.add.auth || []"
-            v-role="options.add.role || []"
-            @click="addAction"
-            type="primary"
-            class="w-full lg:w-auto mt-2 lg:mt-0"
-          >
-            <template #icon><icon-plus /></template>{{ options.add.text || '新增' }}
-          </a-button>
-
-          <a-popconfirm
-            content="确定要删除数据吗?"
-            position="bottom"
-            @ok="deletesMultipleAction"
-            v-if="options.delete.show && isBatch(options.delete) && options.rowSelection"
-          >
-            <a-button
-              v-auth="options.delete.auth || []"
-              v-role="options.delete.role || []"
-              type="primary"
-              status="danger"
-              class="w-full lg:w-auto mt-2 lg:mt-0"
-            >
-              <template #icon><icon-delete /></template>
-              {{ isRecovery ? options.delete.realText || '删除' : options.delete.text || '删除' }}
-            </a-button>
-          </a-popconfirm>
-
-          <a-popconfirm
-            content="确定要恢复数据吗?"
-            position="bottom"
-            @ok="recoverysMultipleAction"
-            v-if="options.recovery.show && isRecovery && isBatch(options.delete)"
-          >
-            <a-button
-              v-auth="options.recovery.auth || []"
-              v-role="options.recovery.role || []"
-              type="primary"
-              status="success"
-              class="w-full lg:w-auto mt-2 lg:mt-0"
-            >
-              <template #icon><icon-undo /></template>{{ options.recovery.text || '恢复' }}</a-button
-            >
-          </a-popconfirm>
-
-          <a-button
-            v-if="options.import.show"
-            v-auth="options.import.auth || []"
-            v-role="options.import.role || []"
-            @click="importAction"
-            class="w-full lg:w-auto mt-2 lg:mt-0"
-            ><template #icon><icon-upload /></template>{{ options.import.text || '导入' }}</a-button
-          >
-
-          <a-button
-            v-if="options.export.show"
-            v-auth="options.export.auth || []"
-            v-role="options.export.role || []"
-            @click="exportAction"
-            class="w-full lg:w-auto mt-2 lg:mt-0"
-            ><template #icon><icon-download /></template>{{ options.export.text || '导出' }}</a-button
-          >
-
-          <a-button
-            type="secondary"
-            @click="handlerExpand"
-            v-if="options.isExpand"
-            class="w-full lg:w-auto mt-2 lg:mt-0"
-          >
-            <template #icon>
-              <icon-expand v-if="!expandState" />
-              <icon-shrink v-else />
-            </template>
-            {{ expandState ? ' 折叠' : ' 展开' }}
-          </a-button>
-        </slot>
+        <slot name="tableButtons"> 此处为按钮区 </slot>
         <slot name="tableAfterButtons"></slot>
       </a-space>
       <a-space class="lg:mt-0 mt-2" v-if="options.showTools">
@@ -156,6 +79,7 @@
             <slot name="expand-row" v-bind="record"></slot>
           </template>
           <template #columns>
+            <!-- {{ columns }} -->
             <ma-column
               ref="crudColumnRef"
               v-if="reloadColumn"
@@ -179,13 +103,21 @@
               <template #operationAfterExtend="{ record, column, rowIndex }">
                 <slot name="operationAfterExtend" v-bind="{ record, column, rowIndex }"></slot>
               </template>
-
+              <!-- 列单元格式插槽 -->
               <template
                 v-for="(slot, slotIndex) in getSlot(columns)"
                 :key="slotIndex"
                 #[slot]="{ record, column, rowIndex }"
               >
                 <slot :name="`${slot}`" v-bind="{ record, column, rowIndex }" />
+              </template>
+              <!-- 标题插件 -->
+              <template
+                v-for="(slot, slotIndex) in getSlot(columns)"
+                :key="slotIndex"
+                #[`tableTitle-${slot}`]="{ record, column, rowIndex }"
+              >
+                <slot :name="`tableTitle-${slot}`" v-bind="{ record, column, rowIndex }" />
               </template>
             </ma-column>
           </template>
@@ -213,15 +145,12 @@ import isArray from 'lodash/isArray';
 import isFunction from 'lodash/isFunction';
 import isUndefined from 'lodash/isUndefined';
 import { request } from '@/utils/request';
-import isObject from 'lodash/isObject';
 import defaultOptions from './config/options-default';
 import tool from '@/utils/tool';
 import { Message } from '@arco-design/web-vue';
 import checkAuth from '@/directives/auth/auth';
 import { loadDict } from '@cps/ma-form/js/networkRequest.js';
-import { runEvent } from '@cps/ma-form/js/event.js';
-
-import ColumnService from '@cps/ma-form/js/columnService';
+import Print from '@/utils/print';
 
 // 注册列组件
 import MaColumn from './components/column.vue';
@@ -230,15 +159,16 @@ import MaSetting from './components/setting.vue';
 import MaContextMenu from './components/contextMenu.vue';
 
 import { MaTOptions, MaTSearch, MaTProps } from './types';
-import { getCurrentInstance } from 'vue';
 
 const props = withDefaults(defineProps<MaTProps>(), {
   // search: (): MaTSearch => ({
   //   id: 'abc',
   // }),
-  // options: (): MaTOptions => ({
-  //   pk: '123',
-  // }),
+  options: (): MaTOptions => ({
+    pk: 'id',
+    ps: 1,
+    pi: 10,
+  }),
   // columns: () => [{ title: 'name' }],
   // tableData: undefined,
 });
@@ -265,8 +195,6 @@ const imgUrl = ref(import.meta.env.VITE_APP_BASE + 'not-image.png');
 const cascaders = ref([]);
 const dicts = ref({});
 const expandState = ref(false);
-// 页头高度
-const headerHeight = ref(0);
 
 const crudFormRef = ref();
 // 右键菜单引用
@@ -283,6 +211,7 @@ const crudImportRef = ref();
 
 const options = ref(Object.assign(JSON.parse(JSON.stringify(defaultOptions)), props.options));
 
+console.log(options);
 // 把options设置为子组件可用
 provide('options', options);
 
@@ -314,22 +243,6 @@ const init = async () => {
       await loadDict(dicts.value, item);
     }
   });
-  setTimeout(async () => {
-    await tabsHandler();
-  }, 500);
-};
-
-const tabsHandler = async () => {
-  // 处理tabs
-  const tabs = options.value.tabs;
-  if (isFunction(tabs.data) || isArray(tabs.data)) {
-    tabs.data = isFunction(tabs.data) ? await tabs.data() : tabs.data;
-  } else if (!isUndefined(tabs.dataIndex)) {
-    const col = columns.value.find((item) => item.dataIndex === tabs.dataIndex);
-    if (col.search === true && isObject(col.dict)) {
-      tabs.data = dicts.value[tabs.dataIndex];
-    }
-  }
 };
 
 const isBatch = (obj) => (isUndefined(obj) ? true : obj?.batch ?? true);
@@ -341,23 +254,6 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {});
-
-const toggleSearch = async () => {
-  // const dom = crudHeaderRef.value?.style
-  // if (dom) {
-  //   crudSearchRef.value.showSearch
-  //   ? crudSearchRef.value.setSearchHidden()
-  //   : crudSearchRef.value.setSearchDisplay()
-  //   await nextTick(() => {
-  //     headerHeight.value = crudHeaderRef.value.offsetHeight
-  //     options.value.pageLayout === 'fixed' && settingFixedPage()
-  //   })
-  // }
-};
-
-const printTable = () => {
-  // new Print(crudContentRef.value)
-};
 
 const tableSetting = () => {
   crudSettingRef.value.open();
@@ -594,6 +490,7 @@ const showImage = (url) => {
   imgUrl.value = url;
   imgVisible.value = true;
 };
+// 这个方法有个问题，就是子字段不能与现有的字段同名，不知道对不对。需要考虑一下逻辑
 const getSlot = (cls = []): string[] => {
   let sls: string[] = [];
   cls.map((item: any) => {
@@ -611,57 +508,15 @@ provide('getSlot', getSlot);
 
 // 运行右键菜单
 
-/**
- * 运行右键菜单
- * @todo 事件应该是传入的。
- * 事实上，点击后，应该可以执行默认操作，或者把对应的事件返回
- */
-const execContextMenuCommand = async (args) => {
-  // const item = args.contextItem
-  // const record = args.record
-  // switch(item.operation) {
-  //   case 'print': await printTable(); break;
-  //   case 'refresh': await refresh(); break;
-  //   case 'add': addAction(); break;
-  //   case 'edit': editAction(record); break;
-  //   case 'delete': crudColumnRef.value.deleteAction(record); break;
-  //   default:
-  //     await runEvent(item, 'onCommand', undefined, args)
-  //     break;
-  // }
-};
-
 // 请求数据
 const requestData = async () => {
   await init();
-  if (options.value.showIndex && columns.value.length > 0 && columns.value[0].dataIndex !== '__index') {
-    columns.value.unshift({
-      title: options.value.indexLabel,
-      dataIndex: '__index',
-      width: options.value.indexColumnWidth,
-      fixed: options.value.indexColumnFixed,
-    });
-  }
-  if (
-    options.value.operationColumn &&
-    columns.value.length > 0 &&
-    columns.value[columns.value.length - 1].dataIndex !== '__operation'
-  ) {
-    columns.value.push({
-      title: options.value.operationColumnText,
-      dataIndex: '__operation',
-      width: options.value.operationColumnWidth ?? options.value.operationWidth,
-      align: options.value.operationColumnAlign,
-      fixed: options.value.operationColumnFixed,
-    });
-  }
   // 初始化请求参数
   initRequestParams();
   if (!options.value.tabs?.dataIndex && !options.value.tabs.data) {
     await refresh();
   } else {
     options.value.tabs.defaultKey = options.value.tabs?.defaultKey ?? options.value.tabs.data[0].value;
-    await tabChange(options.value.tabs?.defaultKey);
   }
 };
 
@@ -676,106 +531,68 @@ const initRequestParams = () => {
 };
 
 /**
- * 获取column属性服务类
- * @returns ColumnService
+ * 以下为已确认内容
  */
-const getColumnService = (strictMode = true) => {
-  return new ColumnService(
-    {
-      columns: columns.value,
-      cascaders: cascaders.value,
-      dicts: dicts.value,
-    },
-    strictMode,
-  );
-};
 
-const tabChange = async (value) => {
-  const searchKey = options.value.tabs?.searchKey ?? options.value.tabs?.dataIndex ?? 'tabValue';
-  const params = {};
-  params[searchKey] = value;
-  requestParams.value = Object.assign(requestParams.value, params);
-  await runEvent(options.value.tabs, 'onChange', undefined, value);
-  await refresh();
-};
-// 获取表格数据
-const getTableData = () => {
-  return tableData.value;
-};
-// 获取当前第几页
-const getCurrentPage = () => requestParams.value[config.request.page];
-// 获取每页显示籹
-const getPageSize = () => requestParams.value[config.request.pageSize];
-// 获取总数量
-const getTotal = () => total.value;
-
-// 一些事件
-
-const seeAction = (record) => {
-  if (isFunction(options.beforeOpenSee) && !options.beforeOpenSee(record)) {
-    return false;
-  }
-  if (options.see.action && isFunction(options.see.action)) {
-    options.see.action(record);
-  } else {
-    props.crudFormRef.see(record);
+/**
+ * 运行右键菜单
+ * @todo 事件应该是传入的。
+ * 事实上，点击后，应该可以执行默认操作，或者把对应的事件返回
+ */
+const execContextMenuCommand = async (args) => {
+  const item = args.contextItem;
+  const record = args.record;
+  switch (item.operation) {
+    case 'print':
+      await printTable();
+      break;
+    case 'refresh':
+      await refresh();
+      break;
+    case 'add':
+      addAction();
+      break;
+    case 'edit':
+      editAction(record);
+      break;
+    case 'delete':
+      // crudColumnRef.value.deleteAction(record);
+      break;
+    default:
+      // await runEvent(item, 'onCommand', undefined, args);
+      break;
   }
 };
-const recoveryAction = async (record) => {
-  const response = await options.recovery.api({ ids: [record[props.pk]] });
-  response.success && Message.success(response.message || `恢复成功！`);
-  emit('refresh');
-};
 
-const deleteAction = async (record) => {
-  let data = {};
-  if (isFunction(options.beforeDelete) && !(data = options.beforeDelete([record[props.pk]]))) {
-    return false;
-  }
-  const api = props.isRecovery ? options.delete.realApi : options.delete.api;
-  const response = await api(Object.assign({ ids: [record[props.pk]] }, data));
-  if (options.afterDelete && isFunction(options.afterDelete)) {
-    options.afterDelete(response, record);
-  }
-  response.success && Message.success(response.message || `删除成功！`);
-  emit('refresh');
+const toggleSearch = () => {
+  console.log('切换是否显示搜索区');
 };
-
+const crudContentRef = ref();
+const printTable = () => {
+  new Print(crudContentRef.value);
+};
 // 操作市场
 const operation = (action, record) => {
   if (typeof action === 'string') {
     switch (action) {
-      case 'seeAction':
-        seeAction(record);
-        break;
-      case 'deleteAction':
-        deleteAction(record);
-        break;
-      case 'recoveryAction':
-        recoveryAction(record);
-        break;
+      // case 'seeAction':
+      //   seeAction(record);
+      //   break;
+      // case 'deleteAction':
+      //   deleteAction(record);
+      //   break;
+      // case 'recoveryAction':
+      //   recoveryAction(record);
+      //   break;
+      // case 'printTable':
+      //   printTable(record);
+      //   break;
       default:
         console.error(`Method ${action} not found!`);
     }
   }
 };
 defineExpose({
-  refresh,
   requestData,
-  editAction,
-  getTableData,
-  setSelecteds,
-  getColumnService,
-  getCurrentPage,
-  getPageSize,
-  getTotal,
-  requestParams,
-  isRecovery,
-  tableRef,
-  crudFormRef,
-  crudImportRef,
-  crudSettingRef,
 });
-// addAction, getCurrentAction, getFormData, crudSearchRef, getFormColumns
 </script>
-./components/column/column.vue

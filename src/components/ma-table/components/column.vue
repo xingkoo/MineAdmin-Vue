@@ -1,33 +1,27 @@
 <template>
-  <template v-for="column in props.columns" :key="column[props.pk]">
-    <template v-if="isFunction(column.hide) ? columnhide() : !column.hide">
-      <!-- 处理含有子列的列 -->
+  <template v-for="row in props.columns" :key="row[options.pk]">
+    <template v-if="isFunction(row.hide) ? row.hide() : !row.hide">
       <a-table-column
-        :title="column.title"
-        :width="column.width"
-        :ellipsis="column.ellipsis ?? true"
-        :filterable="column.filterable"
-        :cell-class="column.cellClass"
-        :header-cell-class="column.headerCellClass"
-        :body-cell-class="column.bodyCellClass"
-        :summary-cell-class="column.summaryCellClass"
-        :cell-style="column.cellStyle"
-        :header-cell-style="column.headerCellStyle"
-        :body-cell-style="column.bodyCellStyle"
-        :summary-cell-style="column.summaryCellStyle"
-        :tooltip="column.tooltip ?? true"
-        :align="column.align || 'left'"
-        :fixed="column.fixed"
-        v-if="column.children && column.children.length > 0"
+        :title="row.title"
+        :width="row.width"
+        :ellipsis="row.ellipsis ?? true"
+        :filterable="row.filterable"
+        :cell-class="row.cellClass"
+        :header-cell-class="row.headerCellClass"
+        :body-cell-class="row.bodyCellClass"
+        :summary-cell-class="row.summaryCellClass"
+        :cell-style="row.cellStyle"
+        :header-cell-style="row.headerCellStyle"
+        :body-cell-style="row.bodyCellStyle"
+        :summary-cell-style="row.summaryCellStyle"
+        :tooltip="row.tooltip ?? true"
+        :align="row.align || 'left'"
+        :fixed="row.fixed"
+        v-if="row.children && row.children.length > 0"
       >
-        <column
-          @refresh="() => refresh()"
-          :isRecovery="props.isRecovery"
-          :crudFormRef="props.crudFormRef"
-          :columns="column.children"
-        >
+        <column @refresh="() => refresh()" :isRecovery="props.isRecovery" :columns="row.children">
           <template
-            v-for="(childRow, childIndex) in column.children"
+            v-for="(childRow, childIndex) in row.children"
             :key="childIndex"
             #[childRow.dataIndex]="{ record, column, rowIndex }"
           >
@@ -35,39 +29,49 @@
           </template>
         </column>
       </a-table-column>
-      <!-- 处理无子列的列 -->
       <a-table-column
-        :title="column.title"
-        :data-index="column.dataIndex"
-        :width="column.width"
-        :ellipsis="column.ellipsis ?? true"
-        :filterable="column.filterable"
-        :cell-class="column.cellClass"
-        :header-cell-class="column.headerCellClass"
-        :body-cell-class="column.bodyCellClass"
-        :summary-cell-class="column.summaryCellClass"
-        :cell-style="column.cellStyle"
-        :header-cell-style="column.headerCellStyle"
-        :body-cell-style="column.bodyCellStyle"
-        :summary-cell-style="column.summaryCellStyle"
-        :tooltip="column.dataIndex === '__operation' ? false : column.tooltip ?? true"
-        :align="column.align || 'left'"
-        :fixed="column.fixed"
-        :sortable="column.sortable"
+        :title="row.title"
+        :data-index="row.dataIndex"
+        :width="row.width"
+        :ellipsis="row.ellipsis ?? true"
+        :filterable="row.filterable"
+        :cell-class="row.cellClass"
+        :header-cell-class="row.headerCellClass"
+        :body-cell-class="row.bodyCellClass"
+        :summary-cell-class="row.summaryCellClass"
+        :cell-style="row.cellStyle"
+        :header-cell-style="row.headerCellStyle"
+        :body-cell-style="row.bodyCellStyle"
+        :summary-cell-style="row.summaryCellStyle"
+        :tooltip="row.dataIndex === '__operation' ? false : row.tooltip ?? true"
+        :align="row.align || 'left'"
+        :fixed="row.fixed"
+        :sortable="row.sortable"
         v-else
       >
         <template #title>
-          <slot :name="`tableTitle-${column.dataIndex}`" v-bind="{ column: row }">{{ column.title }}</slot>
+          <slot :name="`tableTitle-${row.dataIndex}`" v-bind="{ column: row }">{{ row.title }}</slot>
         </template>
-        <!-- 自定义各列的单元格 -->
-        <!-- 根据列类型，按染操插槽、自定义插槽、通用渲染方式的顺序来处理各列 -->
         <template #cell="{ record, column, rowIndex }">
-          <!-- 操作栏 -->
-          <template v-if="column.widgit === 'index'">
-            {{ rowIndex }}
+          <index-column
+            v-if="row.type === 'index'"
+            :record="record"
+            :column="column"
+            :rowIndex="rowIndex"
+          ></index-column>
+          <template v-if="row.type === 'operation'">
+            <!-- 操作栏 -->
+            <a-scrollbar type="track" style="overflow: auto">
+              <a-space size="mini">
+                <slot name="operationBeforeExtend" v-bind="{ record, column, rowIndex }"></slot>
+                <slot name="operationCell" v-bind="{ record, column, rowIndex }"> 123</slot>
+                <slot name="operationAfterExtend" v-bind="{ record, column, rowIndex }"></slot>
+              </a-space>
+            </a-scrollbar>
           </template>
-          <template v-if="column.widgit === 'operation'"> 操作 </template>
-          <template v-else> 默认 </template>
+          <slot :name="row.dataIndex" v-bind="{ record, column, rowIndex }" v-else>
+            <template>{{ record[row.dataIndex] }}1123</template>
+          </slot>
         </template>
       </a-table-column>
     </template>
@@ -75,7 +79,7 @@
 </template>
 
 <script setup>
-import CellIndex from './cell/cell-index.vue';
+import IndexColumn from './widgets/index-column.vue';
 import { inject, provide } from 'vue';
 import config from '@/config/crud';
 import uploadConfig from '@/config/upload';
@@ -87,13 +91,11 @@ import commonApi from '@/api/common';
 
 const emit = defineEmits(['refresh', 'showImage']);
 const props = defineProps({
-  pk: String,
   columns: Array,
   isRecovery: Boolean,
-  crudFormRef: Object,
 });
 
-const options = inject('options');
+const options = inject('options'); // 表格配置信息
 const requestParams = inject('requestParams');
 const getSlot = inject('getSlot');
 
@@ -170,57 +172,11 @@ const getIndex = (rowIndex) => {
   }
 };
 
-const seeAction = (record) => {
-  if (isFunction(options.beforeOpenSee) && !options.beforeOpenSee(record)) {
-    return false;
-  }
-  if (options.see.action && isFunction(options.see.action)) {
-    options.see.action(record);
-  } else {
-    props.crudFormRef.see(record);
-  }
-};
-
-const editAction = (record) => {
-  if (isFunction(options.beforeOpenEdit) && !options.beforeOpenEdit(record)) {
-    return false;
-  }
-  if (options.edit.action && isFunction(options.edit.action)) {
-    options.edit.action(record);
-  } else {
-    props.crudFormRef.edit(record);
-  }
-};
-
-const recoveryAction = async (record) => {
-  const response = await options.recovery.api({ ids: [record[props.pk]] });
-  response.success && Message.success(response.message || `恢复成功！`);
-  emit('refresh');
-};
-
-const deleteAction = async (record) => {
-  let data = {};
-  if (isFunction(options.beforeDelete) && !(data = options.beforeDelete([record[props.pk]]))) {
-    return false;
-  }
-  const api = props.isRecovery ? options.delete.realApi : options.delete.api;
-  const response = await api(Object.assign({ ids: [record[props.pk]] }, data));
-  if (options.afterDelete && isFunction(options.afterDelete)) {
-    options.afterDelete(response, record);
-  }
-  response.success && Message.success(response.message || `删除成功！`);
-  emit('refresh');
-};
-
-const refresh = () => {
-  emit('refresh');
-};
-
-const clickAction = (type, record, column, rowIndex) => {
+const action = (type, record, column, rowIndex) => {
   emit('operation', type, record, column, rowIndex);
 };
 
-defineExpose({ deleteAction, recoveryAction });
+defineExpose({});
 </script>
 
 <style scoped>
@@ -229,4 +185,3 @@ defineExpose({ deleteAction, recoveryAction });
   background-color: var(--color-fill-4);
 }
 </style>
-../../config/custom-render

@@ -9,7 +9,11 @@
 -->
 <template>
   <div class="ma-content-block lg:flex justify-between p-4">
-    <ma-table :options="options" :columns="columns" :tableData="tableData" ref="table"></ma-table>
+    <ma-table :columns="columns" :options="options" ref="table">
+      <template #tableTitle-phone>?插槽标题示例?</template>
+      <template #phone>?test?</template>
+      <template #indexCell>?test?</template>
+    </ma-table>
   </div>
 </template>
 
@@ -18,7 +22,7 @@ import { ref, reactive } from 'vue';
 import user from '@/api/system/user';
 import { Message } from '@arco-design/web-vue';
 import { MaTColumn } from '@/components/ma-table';
-const tableData = ref([
+const data = ref([
   // {
   //   id: 1,
   //   username: 'superAdmin',
@@ -44,6 +48,9 @@ const tableData = ref([
 
 const options = reactive({
   pk: 'id',
+  pi: 1,
+  ps: 10,
+
   api: user.getPageList,
   recycleApi: user.getRecyclePageList,
   searchColNumber: 3,
@@ -80,51 +87,6 @@ const options = reactive({
     url: 'system/user/export',
     auth: ['system:user:export'],
   },
-  formOption: {
-    width: 800,
-    layout: [
-      {
-        formType: 'grid',
-        cols: [{ span: 24, formList: [{ dataIndex: 'avatar' }] }],
-      },
-      {
-        formType: 'grid',
-        cols: [
-          { span: 12, formList: [{ dataIndex: 'username' }] },
-          { span: 12, formList: [{ dataIndex: 'dept_ids' }] },
-        ],
-      },
-      {
-        formType: 'grid',
-        cols: [
-          { span: 12, formList: [{ dataIndex: 'password' }] },
-          { span: 12, formList: [{ dataIndex: 'nickname' }] },
-        ],
-      },
-      {
-        formType: 'grid',
-        cols: [
-          { span: 12, formList: [{ dataIndex: 'role_ids' }] },
-          { span: 12, formList: [{ dataIndex: 'phone' }] },
-        ],
-      },
-      {
-        formType: 'grid',
-        cols: [
-          { span: 12, formList: [{ dataIndex: 'post_ids' }] },
-          { span: 12, formList: [{ dataIndex: 'email' }] },
-        ],
-      },
-      {
-        formType: 'grid',
-        cols: [{ span: 24, formList: [{ dataIndex: 'status' }] }],
-      },
-      {
-        formType: 'grid',
-        cols: [{ span: 24, formList: [{ dataIndex: 'remark' }] }],
-      },
-    ],
-  },
   isDbClickEdit: false,
   beforeOpenEdit: (record) => {
     if (record.id === 1) {
@@ -144,56 +106,63 @@ const options = reactive({
 const columns: MaTColumn[] = reactive([
   {
     title: 'ID',
+    type: 'index',
     dataIndex: 'id',
-    addDisplay: false,
-    editDisplay: false,
-    width: 50,
-    hide: true,
+    width: 120,
+    hide: false,
+  },
+  {
+    title: '操作',
+    type: 'operation',
+    dataIndex: 'id',
+    width: 120,
+    hide: false,
   },
   {
     title: '头像',
     dataIndex: 'avatar',
     width: 75,
-    formType: 'upload',
     returnType: 'hash',
     type: 'image',
     rounded: true,
     labelWidth: '86px',
-  },
-  {
-    title: '账户',
-    dataIndex: 'username',
-    width: 130,
-    search: true,
-    addDisabled: false,
-    editDisabled: true,
-    commonRules: [{ required: true, message: '账户必填' }],
-  },
-  {
-    title: '所属部门',
-    dataIndex: 'dept_ids',
-    hide: true,
-    formType: 'tree-select',
-    multiple: true,
-    treeCheckable: true,
-    treeCheckStrictly: true,
-    dict: { url: 'system/dept/tree' },
-    commonRules: [{ required: true, message: '所属部门必选' }],
-    editDefaultValue: async (record) => {
-      const response = await user.read(record.id);
-      return response.data.deptList.map((item) => item.id);
-    },
+    children: [
+      {
+        title: '账户',
+        dataIndex: 'username',
+        width: 130,
+        type: 'index',
+        search: true,
+        addDisabled: false,
+        editDisabled: true,
+        commonRules: [{ required: true, message: '账户必填' }],
+      },
+      {
+        title: '所属部门',
+        dataIndex: 'dept_ids',
+        type: 'tree-select',
+        multiple: true,
+        treeCheckable: true,
+        treeCheckStrictly: true,
+        type: 'index',
+        dict: { url: 'system/dept/tree' },
+        commonRules: [{ required: true, message: '所属部门必选' }],
+        editDefaultValue: async (record) => {
+          const response = await user.read(record.id);
+          return response.data.deptList.map((item) => item.id);
+        },
+      },
+    ],
   },
   {
     title: '密码',
+    type: 'password',
     dataIndex: 'password',
-    hide: true,
     autocomplete: 'off',
     addDefaultValue: '123456',
     editDefaultValue: '',
     addDisabled: false,
     editDisabled: true,
-    type: 'password',
     addRules: [{ required: true, message: '密码必填' }],
   },
   { title: '昵称', dataIndex: 'nickname', width: 120 },
@@ -201,13 +170,12 @@ const columns: MaTColumn[] = reactive([
     title: '角色',
     dataIndex: 'role_ids',
     width: 120,
-    formType: 'select',
+    type: 'select',
     multiple: true,
     dict: {
       url: 'system/role/list',
       props: { label: 'name', value: 'id' },
     },
-    hide: true,
     commonRules: [{ required: true, message: '角色必选' }],
     editDefaultValue: async (record) => {
       const response = await user.read(record.id);
@@ -230,7 +198,7 @@ const columns: MaTColumn[] = reactive([
     title: '岗位',
     dataIndex: 'post_ids',
     width: 120,
-    formType: 'select',
+    type: 'select',
     multiple: true,
     dict: {
       url: 'system/post/list',
@@ -255,7 +223,7 @@ const columns: MaTColumn[] = reactive([
     dataIndex: 'status',
     width: 100,
     search: true,
-    formType: 'radio',
+    type: 'radio',
     dict: { name: 'data_status', props: { label: 'title', value: 'key' } },
     addDefaultValue: '1',
     labelWidth: '86px',
@@ -265,7 +233,7 @@ const columns: MaTColumn[] = reactive([
     dataIndex: 'remark',
     width: 180,
     hide: true,
-    formType: 'textarea',
+    type: 'textarea',
     labelWidth: '86px',
   },
   {
@@ -275,7 +243,7 @@ const columns: MaTColumn[] = reactive([
     addDisplay: false,
     editDisplay: false,
     search: true,
-    formType: 'range',
+    type: 'range',
   },
 ]);
 </script>
